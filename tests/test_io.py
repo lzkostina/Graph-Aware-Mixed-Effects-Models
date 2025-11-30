@@ -2,10 +2,12 @@ from __future__ import annotations
 import pytest
 import numpy as np
 import scipy.io as sio
+import scipy.sparse as sp
 
 from pathlib import Path
 from src.io.io_cobre import load_cobre
 from src.io.power_groups import power235_groups, make_masks_for_power235
+from src.design.design_matrices import build_Z_from_cell_ids, build_Z_for_X235
 
 def test_load_cobre_roundtrip(tmp_path: Path):
     """
@@ -94,4 +96,57 @@ def test_power235_groups_basic_properties():
     assert len(flat_again) == 235
     assert len(set(flat_again)) == 235
 
+def test_build_Z_from_cell_ids_one_hot():
+    """
+    Simple test: for a small cell_id_of_edge vector, Z should be one-hot with
+    exactly one '1' per row and correct column positions.
+    """
+    cell_id_of_edge = np.array([0, 1, 1, 2, 0], dtype=int)  # E = 5, C = 3
+    C = 3
+    Z = build_Z_from_cell_ids(cell_id_of_edge, C)
 
+    assert isinstance(Z, sp.csr_matrix)
+    assert Z.shape == (5, 3)
+
+    Z_dense = Z.toarray()
+    # One '1' per row
+    assert (Z_dense.sum(axis=1) == 1).all()
+
+    # Column locations match cell_id_of_edge
+    expected = np.zeros_like(Z_dense)
+    for e, c in enumerate(cell_id_of_edge):
+        expected[e, c] = 1
+    np.testing.assert_array_equal(Z_dense, expected)
+
+
+def test_build_Z_for_X235_basic_properties():
+    """
+    End-to-end sanity test that build_Z_for_X235:
+    - produces Z with one '1' per row,
+    - has shape (E235, C) where C = K*(K+1)//2,
+    - cell_id_of_edge is in [0..C-1].
+    """
+    # Use the real masks
+    roi_ids_263, roi_keep_mask_263, edge_keep_mask, kept_roi_ids_235, sys_labels_235 = make_masks_for_power235()
+
+    K = 13
+    Z, cells, cell_id_of_edge = build_Z_for_X235(
+        roi_ids_263=roi_ids_263,
+        roi_keep_mask_263=roi_keep_mask_263,
+        edge_keep_mask=edge_keep_mask,
+        sys_labels_235=sys_labels_235,
+        K=K,
+    )
+
+    C = K * (K + 1) // 2
+    assert cells.shape == (C, 2)
+    assert Z.shape[1] == C
+    assert cell_id_of_edge.shape[0] == Z.shape[0]
+
+    # Z is one-hot per row
+    Z_dense_row_sums = np.asarray(Z.sum(axis=1)).ravel()
+    assert np.all(Z_dense_row_sums == 1), "Each edge should belong to exactly one cell"
+
+    # cell_id_of_edge range
+    assert cell_id_of_edge.min() >= 0
+    assert cell_id_of_edge.max() < C
