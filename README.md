@@ -10,48 +10,43 @@ The main goal of this project is to implement and optimize the EM algorithm for 
 original article does not provide Python implementation of described methods. 
 
 
-## Repository Structure
-
-Planned structure (!!!!!!! PLANNED, NEED TO BE MODIFIED !!!!!!!!!!!!!!!):
+## Repository Structure:
 
 ```text
 project-root/
 ├── src/
 │   ├── model/
 │   │   ├── graph_aware_em.py       # Reference / naive EM implementation
-│   │   ├── block_descent.py        # Optimized EM (sparse, vectorized)
-│   │   ├── multicov_model.py
-│   │   └── variance_structure.py 
+│   │   ├── block_descent.py        # Optimized EM (block descent version)
+│   │   ├── multicov_model.py       # Extension to include multiple covariates
+│   │   └── variance_structure.py   # Diagonal or block diagonal structure of variance
 │   ├── design/                  # Build Z, covariates, and cell assignments
 │   │   ├── cells.py
 │   │   ├── design_matrices.py
 │   │   └── fixed_effects.py
-│   ├── io/                      # Data loading (e.g., COBRE or synthetic)
+│   ├── io/                      # Data loading 
 │   │   ├── io_cobre.py
 │   │   └── power_groups.py
 │   └── utils/                   # Small helpers (logging, timing, etc.)
 ├── demo/
 │   ├── demo.ipynb               # Main demo (runnable in < 30 minutes)
-│   └── demo.py                  # Script version of the demo (optional)
+│   └── demo.py                  # Script version of the demo 
 ├── data/
 │   ├── raw/                     # COBRE dataset used in article 
 │   └── processed/              
-├── pipeline/
+├── pipeline/                    # simple scripts to run experiments reflected in Section 3.1 of the original article
 │   ├── cobre_analysis.py
 │   ├── sec_3_1_cell_only.py
 │   └── section31.py
 ├── scripts
 │   └── run_cobre.py
-├── results/
-│   ├── figures/                 # Plots (e.g., log-likelihood vs iteration)
-│   ├── tables/                  # Small summary tables / benchmarks
-│   └── benchmarks/              # Timing / performance results
 ├── tests/
 │   ├── test_io.py               # Basic correctness tests for design and other helpers
-│   └── test_design_variance.py              # Sanity checks for GLS helpers
+│   └── test_design_variance.py  # Sanity checks for variance constructions
+├── Makefile
 ├── requirements.txt
 ├── README.md
-└── report-KOSTINA.pdf           # Final write-up (1–3 pages)
+└── report-KOSTINA.pdf           # Final write-up 
 ```
 
 ### Installation
