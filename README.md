@@ -1,10 +1,11 @@
 # Graph-Aware-Mixed-Effects-Models
 
-Efficient, reproducible Python implementation of the EM algorithm for the Graph-Aware Mixed-Effects (GA-ME) model 
+Efficient reproducible Python implementation of the EM algorithm for the Graph-Aware Mixed-Effects model 
 for brain connectivity networks, based on Kim, Kessler & Levina (2023, Annals of Applied Statistics).
 This project focuses on scalable estimation (Woodbury identity + block coordinate descent) and a reproducible demo 
 pipeline suitable for running on a laptop.
-*Reference paper:*
+
+**Reference paper:**
 https://projecteuclid.org/journals/annals-of-applied-statistics/volume-17/issue-3/Graph-aware-modeling-of-brain-connectivity-networks/10.1214/22-AOAS1709.short
 ---
 
@@ -15,7 +16,7 @@ original article does not provide Python implementation of described methods.
 
 * Make the workflow reproducible and easy to run (environment, tests, one-command demo).
 
-* Provide a self-contained demonstration that runs in < 30 minutes.
+* Provide a self-contained demonstration that runs in ~ 5 minutes.
 
 ## Repository Structure:
 
@@ -87,7 +88,7 @@ This should:
 This project supports running on the COBRE-derived connectivity representation used in the paper.
 Because raw neuroimaging-derived datasets are often large and restricted, this repository is designed so that:
 the demo runs without requiring the full raw dataset (using a small bundled example or cached artifacts), and
-full-data runs (if you have access) can be performed by placing data locally under data/raw/ and running the pipeline 
+full-data runs (if you have access) can be performed by placing data locally under `data/raw/` and running the pipeline 
 scripts. COBRE data downloaded using R is stored in `data\raw` for convenience. 
 
 
