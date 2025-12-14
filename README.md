@@ -69,9 +69,11 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+Dependencies are intentionally minimal to make the project easy to install and run.
+
 
 ### Usage
-Run demo (recommended)
+Run demo 
 ```bash
 make demo
 ```
