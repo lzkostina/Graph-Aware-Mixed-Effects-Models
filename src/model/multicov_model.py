@@ -516,58 +516,55 @@ def fit_multicov_model(
 # =============================================================================
 # DEMO
 # =============================================================================
+def run_demo(
+    *,
+    seed: int = 42,
+    N: int = 124,
+    max_iter: int = 50,
+    verbose: bool = False,
+    correction: str = "bh",
+    alpha: float = 0.05,
+):
+    """
+    Reproducible demo with multiple covariates.
 
-def demo():
-    """Demo with multiple covariates."""
-    print("=" * 70)
-    print("Multi-Covariate Model Demo")
-    print("=" * 70)
-
-    # Import structure builder
-    import sys
-    sys.path.insert(0, '/mnt/user-data/outputs')
+    Returns
+    -------
+    model : MultiCovariateMEM
+    info : dict
+        Minimal metadata for notebooks / scripts (N,E,C,runtime, etc.)
+    """
+    import time
+    import numpy as np
     from src.design.cells import map_edges_to_cells
     from src.io.power_groups import make_masks_for_power235
 
-    print("\nBuilding structure...")
+    rng = np.random.default_rng(seed)
+
+    # ---- Build cell structure (Power 235 systems) ----
     _, _, _, _, sys_labels_235 = make_masks_for_power235()
-    cells, _, cell_id_of_edge, edges_by_cell = map_edges_to_cells(sys_labels_235, base=1)
+    cells, _, cell_id_of_edge, _edges_by_cell = map_edges_to_cells(sys_labels_235, base=1)
 
     E = len(cell_id_of_edge)
     C = len(cells)
-    N = 124
 
-    # Build edges_per_cell as a list of edge index arrays (0..E-1)
     edges_per_cell = [np.where(cell_id_of_edge == c)[0] for c in range(C)]
 
-    print(f"Structure: N={N}, E={E}, C={C}")
+    # ---- Covariates ----
+    disease = np.array([0] * (N // 2) + [1] * (N - N // 2))
+    age = rng.normal(35, 10, N)
+    gender = rng.binomial(1, 0.5, N)
+    cognitive_score = rng.normal(100, 15, N)
 
-    # Generate synthetic data with multiple effects
-    np.random.seed(42)
-
-    # Covariates
-    disease = np.array([0] * 70 + [1] * 54)  # Binary
-    age = np.random.normal(35, 10, N)  # Continuous
-    gender = np.random.binomial(1, 0.5, N)  # Binary
-    cognitive_score = np.random.normal(100, 15, N)  # Continuous
-
-    # True effects (different covariates affect different cells)
+    # ---- True effects ----
     alpha_true = np.zeros((C, 5))  # [intercept, disease, age, gender, cognitive]
-    alpha_true[:, 0] = np.random.randn(C) * 0.3  # Intercept
+    alpha_true[:, 0] = rng.normal(0, 0.3, C)
 
-    # Disease affects cells 0-12
-    alpha_true[:13, 1] = np.random.randn(13) * 0.06
+    alpha_true[:13, 1] = rng.normal(0, 0.06, 13)       # disease
+    alpha_true[20:31, 2] = rng.normal(0, 0.003, 11)    # age
+    alpha_true[40:51, 3] = rng.normal(0, 0.05, 11)     # gender
+    alpha_true[60:71, 4] = rng.normal(0, 0.002, 11)    # cognitive
 
-    # Age affects cells 20-30
-    alpha_true[20:31, 2] = np.random.randn(11) * 0.003  # Small effect per year
-
-    # Gender affects cells 40-50
-    alpha_true[40:51, 3] = np.random.randn(11) * 0.05
-
-    # Cognitive score affects cells 60-70
-    alpha_true[60:71, 4] = np.random.randn(11) * 0.002
-
-    # Build covariate matrix
     X_cov = np.column_stack([
         np.ones(N),
         disease,
@@ -576,30 +573,20 @@ def demo():
         (cognitive_score - cognitive_score.mean()) / cognitive_score.std(),
     ])
 
-    # Variance
+    # ---- Variance + data generation ----
     tau2, sigma2 = 0.04, 0.015
     U_true = np.eye(C) * tau2
 
-    # Generate data
-    gamma = np.random.multivariate_normal(np.zeros(C), U_true, size=N)
-    epsilon = np.random.randn(N, E) * np.sqrt(sigma2)
+    gamma = rng.multivariate_normal(np.zeros(C), U_true, size=N)
+    epsilon = rng.normal(0, np.sqrt(sigma2), size=(N, E))
 
     Y = np.zeros((N, E))
-    for m in range(N):
-        for e in range(E):
-            c = cell_id_of_edge[e]
-            Y[m, e] = X_cov[m] @ alpha_true[c] + gamma[m, c] + epsilon[m, e]
+    for e in range(E):
+        c = cell_id_of_edge[e]
+        Y[:, e] = X_cov @ alpha_true[c] + gamma[:, c] + epsilon[:, e]
 
-    print(f"\nGenerated data with effects in:")
-    print(f"  Disease: cells 0-12 (13 cells)")
-    print(f"  Age: cells 20-30 (11 cells)")
-    print(f"  Gender: cells 40-50 (11 cells)")
-    print(f"  Cognitive: cells 60-70 (11 cells)")
-
-    # Fit model
-    print("\n" + "=" * 70)
-    print("Fitting model...")
-    print("=" * 70)
+    # ---- Fit ----
+    t0 = time.time()
 
     model = MultiCovariateMEM(
         Y=Y,
@@ -609,35 +596,30 @@ def demo():
     )
 
     model.add_intercept()
-    model.add_covariate('disease', disease, is_binary=True)
-    model.add_covariate('age', age, standardize=True)
-    model.add_covariate('gender', gender, is_binary=True)
-    model.add_covariate('cognitive', cognitive_score, standardize=True)
+    model.add_covariate("disease", disease, is_binary=True)
+    model.add_covariate("age", age, standardize=True)
+    model.add_covariate("gender", gender, is_binary=True)
+    model.add_covariate("cognitive", cognitive_score, standardize=True)
 
-    model.fit(max_iter=50, verbose=True)
+    model.fit(max_iter=max_iter, verbose=verbose)
 
-    # Summary
-    print("\n")
-    model.summary(correction='none', alpha=0.05)
+    runtime = time.time() - t0
 
-    # Detailed results for each covariate
-    print("\n" + "=" * 70)
-    print("Detailed Results")
-    print("=" * 70)
+    # ---- Minimal results summary ----
+    results = {}
+    for cov in ["disease", "age", "gender", "cognitive"]:
+        results[cov] = model.test_covariate(cov, correction=correction, alpha=alpha)["n_significant"]
 
-    for cov in ['disease', 'age', 'gender', 'cognitive']:
-        results = model.test_covariate(cov, correction='none', alpha=0.05)
-        print(f"\n{cov}:")
-        print(f"  Significant cells: {results['n_significant']}")
+    info = dict(
+        seed=seed,
+        N=int(N),
+        E=int(E),
+        C=int(C),
+        max_iter=int(max_iter),
+        runtime_sec=float(runtime),
+        correction=correction,
+        alpha=float(alpha),
+        n_significant=results,
+    )
+    return model, info
 
-        sig_cells = model.get_significant_cells(cov, correction='none', alpha=0.05)
-        if sig_cells:
-            print(f"  Top 5 by p-value:")
-            for a, b, coef, pval in sig_cells[:5]:
-                print(f"    ({a},{b}): coef={coef:+.4f}, p={pval:.4f}")
-
-    return model
-
-
-if __name__ == "__main__":
-    model = demo()
