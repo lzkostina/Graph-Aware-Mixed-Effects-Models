@@ -18,25 +18,37 @@ Planned structure (!!!!!!! PLANNED, NEED TO BE MODIFIED !!!!!!!!!!!!!!!):
 project-root/
 ├── src/
 │   ├── model/
-│   │   ├── em_baseline.py       # Reference / naïve EM implementation
-│   │   ├── em_optimized.py      # Optimized EM (sparse, vectorized)
-│   │   └── gls_utils.py         # GLS / variance-related helpers
+│   │   ├── graph_aware_em.py       # Reference / naive EM implementation
+│   │   ├── block_descent.py        # Optimized EM (sparse, vectorized)
+│   │   ├── multicov_model.py
+│   │   └── variance_structure.py 
 │   ├── design/                  # Build Z, covariates, and cell assignments
+│   │   ├── cells.py
+│   │   ├── design_matrices.py
+│   │   └── fixed_effects.py
 │   ├── io/                      # Data loading (e.g., COBRE or synthetic)
+│   │   ├── io_cobre.py
+│   │   └── power_groups.py
 │   └── utils/                   # Small helpers (logging, timing, etc.)
 ├── demo/
 │   ├── demo.ipynb               # Main demo (runnable in < 30 minutes)
 │   └── demo.py                  # Script version of the demo (optional)
 ├── data/
-│   ├── raw/                     # Empty or example-only (no large data committed)
-│   └── processed/
+│   ├── raw/                     # COBRE dataset used in article 
+│   └── processed/              
+├── pipeline/
+│   ├── cobre_analysis.py
+│   ├── sec_3_1_cell_only.py
+│   └── section31.py
+├── scripts
+│   └── run_cobre.py
 ├── results/
 │   ├── figures/                 # Plots (e.g., log-likelihood vs iteration)
 │   ├── tables/                  # Small summary tables / benchmarks
 │   └── benchmarks/              # Timing / performance results
 ├── tests/
-│   ├── test_em.py               # Basic correctness tests for EM
-│   └── test_gls.py              # Sanity checks for GLS helpers
+│   ├── test_io.py               # Basic correctness tests for design and other helpers
+│   └── test_design_variance.py              # Sanity checks for GLS helpers
 ├── requirements.txt
 ├── README.md
 └── report-KOSTINA.pdf           # Final write-up (1–3 pages)
